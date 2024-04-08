@@ -1,7 +1,10 @@
-4. Landau-Wang simulation of the 2D Potts model.
-References:
+# 4. Landau-Wang simulation of the 2D Potts model.
+
+#### References:
+
 1.F. Wang and D.P.Landau, PHYSICAL REVIEW E, VOLUME 64, 056101 (2001).
 2. D.P. Landau, S-H. Tsai, M. Exler, Am. J. Phys. 72 (2004) for pedagogical discussion.
+
 First submission: points 1 and 2 below.
 1. Implement the Landau-Wang algorithm for the 2D q-state Potts model. The algorithm is
 described in Project 3 above.
@@ -25,3 +28,8 @@ i − hEi
 as a function of the temperature. You should get results similar to Fig.2 the paper by Wang
 and Landau.
 5. (Optional) Test the effect of changing the size L.
+
+
+
+#### Contact us!
+Aina Gaya Àvila - agayaavi53@alumnes.ub.edu
