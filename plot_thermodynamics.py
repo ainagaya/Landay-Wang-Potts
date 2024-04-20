@@ -114,7 +114,7 @@ plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], entropies, 'o', label='Data', markersize=1)
-plt.plot([beta for beta in betas_control], S_control, '.', label='Control')
+plt.plot([2*beta for beta in betas_control], S_control, '.', label='Control', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('entropy')
