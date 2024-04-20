@@ -47,9 +47,17 @@ entropies = [float(d[3]) for d in data]
 print(entropies)
 print("")
 
+
+
+
+
+################ 1/BETA 
+
+
+
 # Plot the data with smaller points
 plt.plot([1/beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], ueng_control, '-', label='Control')
+plt.plot([0.5*1/beta for beta in betas_control], ueng_control, '.', label='Control', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('internal energy')
@@ -59,8 +67,8 @@ plt.savefig(args.filename + "int_energy.png")
 plt.show()
 
 # Plot the data with points
-plt.plot([2*1/beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
-plt.plot([1/beta for beta in betas_control], F_control, '.', label='Control')
+plt.plot([1/beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
+plt.plot([0.5*1/beta for beta in betas_control], F_control, '.', label='Control', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('free energy')
@@ -71,11 +79,46 @@ plt.show()
 
 # Plot the data with points
 plt.plot([1/beta for beta in betas], entropies, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], S_control, '-', label='Control')
+plt.plot([0.5*1/beta for beta in betas_control], S_control, '.', label='Control', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('entropy')
 plt.title('Entropy vs Beta')
 plt.legend()
 plt.savefig(args.filename + "entropy.png")
+plt.show()
+
+################### BETA
+
+# Plot the data with smaller points
+plt.plot([beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
+plt.plot([2*beta for beta in betas_control], ueng_control, '.', label='Control',  markersize=1)
+#plt.xlim([0, 8])
+plt.xlabel('beta')
+plt.ylabel('internal energy')
+plt.title('Internal Energy vs Beta')
+plt.legend()
+plt.savefig(args.filename + "int_energy_beta.png")
+plt.show()
+
+# Plot the data with points
+plt.plot([beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
+plt.plot([2*beta for beta in betas_control], F_control, '.', label='Control', markersize=1)
+#plt.xlim([0, 8])
+plt.xlabel('beta')
+plt.ylabel('free energy')
+plt.title('Free Energy vs Beta')
+plt.legend()
+plt.savefig(args.filename + "free_energy_beta.png")
+plt.show()
+
+# Plot the data with points
+plt.plot([beta for beta in betas], entropies, 'o', label='Data', markersize=1)
+plt.plot([beta for beta in betas_control], S_control, '.', label='Control')
+#plt.xlim([0, 8])
+plt.xlabel('beta')
+plt.ylabel('entropy')
+plt.title('Entropy vs Beta')
+plt.legend()
+plt.savefig(args.filename + "entropy_beta.png")
 plt.show()

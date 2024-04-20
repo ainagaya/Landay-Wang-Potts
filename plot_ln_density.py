@@ -21,7 +21,7 @@ densities = [d[1] for d in data]  # Filter non-zero densities
 print(densities)
 
 # Plot the data with points
-plt.plot(energies, densities, 'o')
+plt.plot(energies, densities, 'o', markersize=2)
 plt.xlabel('E/N')
 plt.ylabel('ln_g_E')
 plt.title('Energy vs Density (Non-zero values)')
