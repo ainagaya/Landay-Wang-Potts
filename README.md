@@ -1,5 +1,15 @@
 # 4. Landau-Wang simulation of the 2D Potts model.
 
+! WIP
+
+## Basic instructions:
+
+- Compile the code: `make`
+- Run simulation: `make run`
+- Run thermodynamics analysis: `make thermo`
+- Generate plots: !WIP
+
+
 #### References:
 
 1.F. Wang and D.P.Landau, PHYSICAL REVIEW E, VOLUME 64, 056101 (2001).
