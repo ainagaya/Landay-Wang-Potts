@@ -105,7 +105,7 @@ plt.show()
 
 # Plot the data with smaller points
 plt.plot([beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], ueng_control, '.', label='Control',  markersize=1)
+plt.plot([2*beta for beta in betas_control], ueng_control, '.', label='Ising',  markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('internal energy')
@@ -116,7 +116,7 @@ plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], F_control, '.', label='Control', markersize=1)
+plt.plot([2*beta for beta in betas_control], F_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('free energy')
@@ -127,7 +127,7 @@ plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], entropies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], S_control, '.', label='Control', markersize=1)
+plt.plot([2*beta for beta in betas_control], S_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('entropy')
@@ -138,7 +138,7 @@ plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], cht_control, '.', label='Control', markersize=1)
+plt.plot([2*beta for beta in betas_control], cht_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('Specific Heat')

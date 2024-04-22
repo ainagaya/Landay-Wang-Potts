@@ -20,12 +20,12 @@ program LandauWangPotts
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
+    integer, parameter ::  q = 2, L = 10,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
     ! E_max : maximum energy
-    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-7)
+    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-6)
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
     real(8), parameter :: T_min = 1.d0, T_max = 1.d0/0.004d0, flatness=0.8
@@ -42,7 +42,7 @@ program LandauWangPotts
     integer, allocatable :: spins(:), hist(:), nbr(:,:), in(:,:)
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
-    real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:), energy_array(:)
+    real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:)
     ! f : modification factor
     ! p : probability of accepting a move
     real(8) :: f
@@ -81,22 +81,13 @@ program LandauWangPotts
     h = 1
 
     allocate(spins(N))
-    allocate(hist(num_E))
-    allocate(ln_n_density(num_E))
-    allocate(ln_n_norm(num_E))
-    allocate(energy_density(num_E))
+    allocate(hist(Emax:abs(Emin)))
+    allocate(ln_n_density(Emax:abs(Emin)))
+    allocate(ln_n_norm(Emax:abs(Emin)))
+    allocate(energy_density(Emax:abs(Emin)))
     allocate(nbr(z, N))
     allocate(in(0:1, N))
-    allocate(energy_array(num_E))
-
-    ! Build energy array
-    do i = 1, num_E 
-        energy_array(i) = Emin + (i-1) * h
-    end do
-
-    print*, "energy_array: ", energy_array
     
-
     ! call random_init(.true., .true.)
     call setr1279(seed)
 
@@ -122,6 +113,8 @@ program LandauWangPotts
     call initialize(spins, hist, f, f_initial, ln_n_density, in, L)
     call generate_nbr(L, in, nbr)
     call energy(spins, nbr, L, z, E)
+
+    print*, "Energy: ", E
 
     ! Main loop
     do i = 1, n_iter
@@ -186,25 +179,23 @@ program LandauWangPotts
 
     do i = 1, num_E
         E = Emin + (i-1) * h
-        call e_index(E, energy_array, j)
-        write(20,*) E, ln_n_density(j)
+        write(20,*) E, ln_n_density(abs(E))
     end do
     close(20)
 
     print*, "Freeing memory: spins"
     deallocate(spins)
     print*, "Freeing memory: hist"
-    deallocate(hist)
+!    deallocate(hist)
     print*, "Freeing memory: ln_n_density"
-    deallocate(ln_n_density)
+!    deallocate(ln_n_density)
     print*, "Freeing memory: energy_density"
-    deallocate(energy_density)
+!    deallocate(energy_density)
     print*, "Freeing memory: nbr"
 !    deallocate(nbr)
     print*, "Freeing memory: in"
 !    deallocate(in)
-    print*, "Freeing memory: energy_array"
-    deallocate(energy_array)
+
 
     print*, "Program finished successfully"
     print*, "Result is in file: ", 'ln_n_density' // trim(current_run) // '.dat'
@@ -277,11 +268,6 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
         print*, "q_new", q_new
         print*, "pos", pos
         print*, "ln_n_density", ln_n_density
-        call e_index(E1, energy_array, energy_index)
-        print*, "energy_index", energy_index
-        print*, "H(i)", hist(energy_index)
-        print*, "ln_n_density(i)", ln_n_density(energy_index)
-
         print*, "ERROR: E does not match E1" 
         stop
     end if
@@ -304,26 +290,23 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
     if (p.ge.1) then
         ! Move accepted
         spins(pos) = q_new
-        call e_index(E2, energy_array, energy_index)
         E = E2
     else if (p.lt.1) then
         i = r1279()
         if (i.lt.p) then
             ! Move accepted by luck
             spins(pos) = q_new
-            call e_index(E2, energy_array, energy_index)
             E = E2
         else
             ! Move rejected
-            call e_index(E1, energy_array, energy_index)
             E = E1
         end if
     end if
 
     ! actualiza ln_n_density 
-    ln_n_density(energy_index) = ln_n_density(energy_index) + log(f)
+    ln_n_density(abs(E)) = ln_n_density(abs(E)) + log(f)
     ! actualiza histograma
-    hist(energy_index) = hist(energy_index) + 1
+    hist(abs(E)) = hist(abs(E)) + 1
 
 end subroutine
 
@@ -332,12 +315,8 @@ subroutine transition_probability(E1, E2, ln_n_density, p)
     integer, intent(in) :: E1, E2
     real(8), intent(in) :: ln_n_density(:)
     real(8), intent(out) :: p
-    integer :: i1, i2
-  
-    call e_index(E1, energy_array, i1)
-    call e_index(E2, energy_array, i2)
 
-    p = min(1.d0, exp(ln_n_density(i1) - ln_n_density(i2)))
+    p = min(1.d0, exp(ln_n_density(abs(E1)) - ln_n_density(abs(E2))))
 
 
 end subroutine
@@ -400,25 +379,6 @@ Subroutine magnetization(s, L, M)
 
 End Subroutine
 
-subroutine e_index(E, energy_array, i)
-    implicit none
-    integer, intent(in) :: E
-    integer, intent(out) :: i
-    real(8), intent(in) :: energy_array(:)
-
-    ! REVISIT THIS
-    do i = 1, num_E
-        if (energy_array(i).eq.E) then
-            return
-        end if
-    end do
-
-    print*, "did not found index for E: ", E
-    print*, "spins", spins(:)
-    print*, "f", f
-    stop
-
-end subroutine
 
 subroutine check_histogram(hist, x, flat)
     implicit none
