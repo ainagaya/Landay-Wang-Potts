@@ -20,7 +20,7 @@ program LandauWangPotts
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 10,  n_iter = 100000, z = 4, seed = 11012000,  num_T = 500
+    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
@@ -28,13 +28,13 @@ program LandauWangPotts
     real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-7)
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
-    real(8), parameter :: T_min = 1.d0, T_max = 1.d0/0.004d0, flatness=0.95
+    real(8), parameter :: T_min = 1.d0, T_max = 1.d0/0.004d0, flatness=0.8
 
     ! Variables
     ! N : number of spins
     ! i, j : loop variables
     ! Emax, Emin : maximum and minimum energy
-    integer :: N, i, j, Emax, Emin, k, num_E, E1, E2, E
+    integer :: N, i, j, Emax, Emin, k, num_E, E
     ! spins : array of spins
     ! hist : energy histogram. Number of times each energy has been visited
     ! nbr : array of nearest neighbors
@@ -45,7 +45,7 @@ program LandauWangPotts
     real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:), energy_array(:)
     ! f : modification factor
     ! p : probability of accepting a move
-    real(8) :: f, p
+    real(8) :: f
     ! E, E1, E2 : store energy values
     ! ln_A : constant to normalize the density of states
     ! beta : inverse temperature
@@ -53,7 +53,7 @@ program LandauWangPotts
     ! h : step size
     ! free_en : free energy value
     ! S : entropy value
-    real(8) :: ln_A, beta, internal_en, h, free_en, S, T, T_interval
+    real(8) :: h
 
     ! flat : flag to check if the histogram is flat
     logical :: flat
@@ -61,7 +61,7 @@ program LandauWangPotts
     ! verbose output
     logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
-    character(len=20) :: current_run
+    character(len=23) :: current_run
 
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
@@ -120,18 +120,7 @@ program LandauWangPotts
     current_run = "_q" // trim(strq) // "_L" // trim(strL) // "_niter" // trim(strMCS)
 
     call initialize(spins, hist, f, f_initial, ln_n_density, in, L)
-
     call generate_nbr(L, in, nbr)
-
-    if (debug) then
-        print*, "in1:", in(1,:)
-        print*, "in0:", in(0,:)
-        print*, "nbr1", nbr(1,:)
-        print*, "nbr2", nbr(2,:)
-        print*, "nbr3", nbr(3,:)
-        print*, "nbr4", nbr(4,:)
-    end if
-
     call energy(spins, nbr, L, z, E)
 
     ! Main loop
@@ -140,6 +129,12 @@ program LandauWangPotts
         do j = 1, N
             ! propose random spin flip
             call propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
+            if (mod(E,2).ne.0) then
+                print*, "ERROR: E is not even"
+                print*, "spins", spins
+                print*, "E", E
+                stop
+            end if
         end do
 
         if (mod(i, 1000).eq.0) then
@@ -172,74 +167,47 @@ program LandauWangPotts
 
     end do
 
+    if (i.ge.n_iter) then
+        print*, "Did not achieve the desired f in", n_iter, "MCS"
+        stop
+    end if
+
     print*, "Final density of states: ", ln_n_density
 
 !   From the final density of states, estimate the internal energy for different temperatures. By rescaling n(E) so that n(Egroundstate) = q, 
 !   we can also obtain the free energy F = and thus the entropy. Check that internal energy, entropy, and free
 !   energy densities agree (for different temperatures) with the exact results of Ferdinand and
 !   Fisher, that are computed by the program ferdinand.f written by Bernd Berg.   
-    
-    print*, "Normalizing density of states..."
 
-    ln_A = log(real(q)) - ln_n_density(num_E)
-
-    print*, log(real(q))
-    print*, (ln_n_density(num_E))
-    print*, "ln_A: ", ln_A
-
-    do i = 1, num_E
-
-        if (ln_n_density(i) > 0) then
-            ln_n_norm(i) = ln_n_density(i) + ln_A
-        else
-            ln_n_norm(i) = 0
-        end if
-    
-    end do
-
-    print*, "ln_n_norm: ", ln_n_norm
-
-    print*, "Writing output to file..."
 
     open(20, file='ln_n_density' // trim(current_run) // '.dat')
-    write(20, '(A)') "# E/N ln_n_density    hist"
 
     print*, "Writing density of states to file..."
 
     do i = 1, num_E
         E = Emin + (i-1) * h
         call e_index(E, energy_array, j)
-        write(20,*) E/N, ln_n_norm(j), hist(j)
+        write(20,*) E, ln_n_density(j)
     end do
     close(20)
 
-    print*, "Calculating internal energy, free energy and entropy..."
+    print*, "Freeing memory: spins"
+    deallocate(spins)
+    print*, "Freeing memory: hist"
+    deallocate(hist)
+    print*, "Freeing memory: ln_n_density"
+    deallocate(ln_n_density)
+    print*, "Freeing memory: energy_density"
+    deallocate(energy_density)
+    print*, "Freeing memory: nbr"
+!    deallocate(nbr)
+    print*, "Freeing memory: in"
+!    deallocate(in)
+    print*, "Freeing memory: energy_array"
+    deallocate(energy_array)
 
-    T_interval = (T_max - T_min) / num_T
-
-    open(10, file='res_ising' // current_run//'.dat')
-!    write(10, '(A)') "#beta    internal_energy/N   free_energy/N   entropy/N"
-    T = T_min
-    do i = 0, num_T
-        T = T_min + T_interval*i
-        beta = 1/T
-        call internal_energy(ln_n_norm, beta, internal_en, Emin, h)
-        print*, "Internal energy at beta = ", beta, " is: ", internal_en, "per site", internal_en/N
-        call free_energy(ln_n_norm, beta, free_en, Emin, h)
-        print*, "Free energy at beta = ", beta, " is: ", free_en, "per site", free_en/N
-        call entropy(internal_en, free_en, beta, S)
-        print*, "Entropy at beta = ", beta, " is: ", S, "per site", S/N
-        call compute_energy_density(ln_n_norm, beta, E, Emin, h, energy_density)
-        write(10,*) beta, internal_en/N, free_en/N, S/N
-        do k = 1, z*N/2
-            E = Emin + (k-1) * h
-            write(11,*) 1.d0/beta, energy_density(k), E
-        end do
-        write(11,*) ""
-        write(11,*) ""
-    end do
-    close(10)
-
+    print*, "Program finished successfully"
+    print*, "Result is in file: ", 'ln_n_density' // trim(current_run) // '.dat'
 
 contains   
 
@@ -292,9 +260,6 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
 
     ! convert the random number to a spin
     pos = int(i*N) + 1
-    if ( debug ) then
-        print*, "i", i, "pos: ", pos
-    end if
 
     q_new = spins(pos)
 
@@ -323,10 +288,6 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
 
     E1 = E
 
-    if ( debug ) then
-        print*, "current energy: ", E1
-    end if
-
     delta_E = 0
     do k = 1, z
         if (spins(nbr(k,pos)).eq.q_new) then
@@ -336,42 +297,24 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
         end if
     end do
 
-    if ( debug ) then
-        print*, "spins", spins
-    end if
-
-    if ( debug ) then
-        print*, "delta_E: ", delta_E
-    end if
-
     E2 = E1 + delta_E
 
-    call transition_probability(E1, E2, ln_n_density, p)
-
-    if ( debug ) then
-        print*, "p: ", p
-    end if    
+    call transition_probability(E1, E2, ln_n_density, p) 
 
     if (p.ge.1) then
+        ! Move accepted
         spins(pos) = q_new
-        if ( debug ) then 
-            print*, "move accepted"
-        end if 
         call e_index(E2, energy_array, energy_index)
         E = E2
     else if (p.lt.1) then
         i = r1279()
         if (i.lt.p) then
+            ! Move accepted by luck
             spins(pos) = q_new
-            if ( debug ) then
-                print*, "move accepted by luck"
-            end if
             call e_index(E2, energy_array, energy_index)
             E = E2
         else
-            if ( debug ) then
-                print*, "move NOT accepted"
-            end if
+            ! Move rejected
             call e_index(E1, energy_array, energy_index)
             E = E1
         end if
@@ -390,27 +333,11 @@ subroutine transition_probability(E1, E2, ln_n_density, p)
     real(8), intent(in) :: ln_n_density(:)
     real(8), intent(out) :: p
     integer :: i1, i2
-
-    if ( debug ) then 
-        print*, "Looking for index of E1: ", E1
-    end if    
+  
     call e_index(E1, energy_array, i1)
-
-    if ( debug ) then 
-        print*, "Looking for index of E2: ", E2
-    end if
     call e_index(E2, energy_array, i2)
 
-    if ( debug ) then
-        print*, "E1: ", E1, i1, ln_n_density(i1)
-        print*, "E2: ", E2, i2, ln_n_density(i2)
-    end if
-
     p = min(1.d0, exp(ln_n_density(i1) - ln_n_density(i2)))
-
-    if ( debug ) then
-        print*, "p: ", p
-    end if
 
 
 end subroutine
@@ -525,118 +452,7 @@ subroutine check_histogram(hist, x, flat)
         print*, "Percentage of flatness: ", ( 1- err / real(size(hist > 0 ))) * 100.d0
     end if
 
-    if (debug) then
-        print*, "sum_hist: ", sum_hist
-        print*, "avg_hist: ", avg_hist
-        print*, "x * avg_hist: ", x * avg_hist
-        print*, "flat: ", flat
-        print*, "hist: ", hist
-        print*, "array: ", hist >= x * avg_hist
-    end if
-
     return
-end subroutine
-
-
-subroutine internal_energy(ln_n_norm, beta, internal_en, Emin, h)
-    implicit none
-    real(8), intent(in) :: ln_n_norm(:)
-    real(8), dimension(size(ln_n_norm)) :: ln_n_norm_minus
-    real(8), intent(in) :: beta
-    integer :: Emin, i ,k
-    real(8), intent(out) :: internal_en
-    real(8) :: numerator, denominator, lambda, h
-    integer :: E
-
-    numerator = 0
-    denominator = 0
-
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        ln_n_norm_minus(i) = ln_n_norm(i) - beta*E
-    end do
-
-    lambda = maxval(ln_n_norm_minus)
-
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
-
-        if (debug) then
-            print*, E
-            print*, "ln_n_norm(E)", ln_n_norm(i), E, beta, lambda
-        end if
-
-        numerator = numerator + exp(ln_n_norm_minus(k) - lambda) * E 
-        denominator = denominator + exp(ln_n_norm_minus(k) - lambda)
-    end do
-
-    print*, "numerator: ", numerator
-    print*, "denominator: ", denominator    
-
-    internal_en = numerator / denominator
-
-    return
-
-end subroutine
-
-subroutine free_energy(ln_n_norm, beta, free_en, Emin, h)
-    implicit none
-    real(8), intent(in) :: ln_n_norm(:)
-    real(8), dimension(size(ln_n_norm)) :: ln_n_norm_minus
-    real(8), intent(in) :: beta
-    integer :: Emin, i, k
-    real(8), intent(out) :: free_en
-    real(8) :: numerator, h, lambda
-    integer :: E
-
-    numerator = 0
-
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        ln_n_norm_minus(i) = ln_n_norm(i) - beta*E
-    end do
-
-    lambda = maxval(ln_n_norm_minus)
-
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
-        numerator = numerator + exp ( ln_n_norm_minus(k) - lambda) 
-    end do    
-
-    free_en = -1/beta * (lambda + log (numerator))
-
-    return
-
-end subroutine
-
-subroutine entropy(U, F, beta, S)
-    implicit none
-    real(8), intent(in) :: U, F, beta
-    real(8), intent(out) :: S
-
-    S = (U - F) * beta
-
-end subroutine
-
-subroutine compute_energy_density(ln_n_norm, beta, E, Emin, h, energy_density)
-    implicit none
-    real(8), intent(in) :: ln_n_norm(:)
-    real(8), intent(in) :: beta
-    integer, intent(out) :: E
-    integer :: Emin, i, k
-    real(8) :: h
-    real(8), intent(out) :: energy_density(:)
-
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
-        if (ln_n_norm(k).ne.0) then
-            energy_density(i) = exp(ln_n_norm(k)) * exp(-beta*E)
-        end if
-    end do
-
 end subroutine
 
 end program LandauWangPotts

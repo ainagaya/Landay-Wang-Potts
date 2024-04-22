@@ -11,8 +11,8 @@ data = []
 with open(args.filename, 'r') as file:
     for line in file:
         print(line)
-        beta, internal_energy, free_energy, entropy = line.strip().split()
-        data.append((beta, internal_energy, free_energy, entropy))
+        beta, internal_energy, free_energy, entropy, specific_heat = line.strip().split()
+        data.append((beta, internal_energy, free_energy, entropy, specific_heat))
 
 
 # Read the data from the ferdi file
@@ -46,7 +46,9 @@ print("")
 entropies = [float(d[3]) for d in data]
 print(entropies)
 print("")
-
+specific_heats = [float(d[4]) for d in data]
+print(specific_heats)
+print("")
 
 
 
@@ -88,6 +90,17 @@ plt.legend()
 plt.savefig(args.filename + "entropy.png")
 plt.show()
 
+# Plot the data with points
+plt.plot([1/beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
+plt.plot([0.5*1/beta for beta in betas_control], cht_control, '.', label='Control', markersize=1)
+#plt.xlim([0, 8])
+plt.xlabel('1/beta')
+plt.ylabel('Specific Heat')
+plt.title('Specific heat vs Beta')
+plt.legend()
+plt.savefig(args.filename + "spec_heat.png")
+plt.show()
+
 ################### BETA
 
 # Plot the data with smaller points
@@ -121,4 +134,15 @@ plt.ylabel('entropy')
 plt.title('Entropy vs Beta')
 plt.legend()
 plt.savefig(args.filename + "entropy_beta.png")
+plt.show()
+
+# Plot the data with points
+plt.plot([beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
+plt.plot([2*beta for beta in betas_control], cht_control, '.', label='Control', markersize=1)
+#plt.xlim([0, 8])
+plt.xlabel('beta')
+plt.ylabel('Specific Heat')
+plt.title('Specific heat vs Beta')
+plt.legend()
+plt.savefig(args.filename + "spec_heat_beta.png")
 plt.show()
