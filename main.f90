@@ -20,7 +20,7 @@ program LandauWangPotts
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 10,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
+    integer, parameter ::  q = 10, L = 40,  n_iter = 10000000, z = 4, seed = 11012000
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
@@ -34,12 +34,13 @@ program LandauWangPotts
     ! N : number of spins
     ! i, j : loop variables
     ! Emax, Emin : maximum and minimum energy
-    integer :: N, i, j, Emax, Emin, k, num_E, E
+    integer :: N, i, j, Emax, Emin, num_E, E
     ! spins : array of spins
     ! hist : energy histogram. Number of times each energy has been visited
     ! nbr : array of nearest neighbors
     ! in : array to apply periodic boundary conditions
-    integer, allocatable :: spins(:), hist(:), nbr(:,:), in(:,:)
+    integer, allocatable :: spins(:), hist(:), nbr(:,:)
+    integer :: in(0:1, L)
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
     real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:)
@@ -53,7 +54,6 @@ program LandauWangPotts
     ! h : step size
     ! free_en : free energy value
     ! S : entropy value
-    real(8) :: h
 
     ! flat : flag to check if the histogram is flat
     logical :: flat
@@ -62,7 +62,6 @@ program LandauWangPotts
     logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
     character(len=8) :: current_run
-
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
 
@@ -74,11 +73,11 @@ program LandauWangPotts
     ! define the energy range
     ! TO-DO: drop out energies out of range, diminish Emax.
     Emin = -z*N/2
-    Emax = Emin*0.2
+    Emax = int(Emin*0.2)
+    ! Emax = 0
+
 
     num_E = abs(Emax - Emin) + 1
-    ! h : step size
-    h = 1
 
     allocate(spins(N))
     allocate(hist(abs(Emax):abs(Emin)))
@@ -86,7 +85,6 @@ program LandauWangPotts
     allocate(ln_n_norm(abs(Emax):abs(Emin)))
     allocate(energy_density(abs(Emax):abs(Emin)))
     allocate(nbr(z, N))
-    allocate(in(0:1, N))
 
 
     ! call random_init(.true., .true.)
@@ -104,14 +102,17 @@ program LandauWangPotts
     print*, "T_min: ", T_min
     print*, "T_max: ", T_max
 
-    write (strq, "(I2)")  q
+    write (strq, "(I1)")  q
     write (strL, "(I2)") L
     write (strMCS, "(I8)") n_iter
 
     print*, "q: ", strq
-    current_run = "_q" // trim(strq) // "_L" // trim(strL)
+    current_run="_q"//trim(strq)//"_L"//trim(strL)
 
-    call initialize(spins, hist, f, f_initial, ln_n_density, in, L)
+    call initialize(spins, hist, f, f_initial, ln_n_density, in, L, Emin, Emax)
+
+    print*, "in", in(0,:)
+
     call generate_nbr(L, in, nbr)
     call energy(spins, nbr, L, z, E)
 
@@ -119,6 +120,7 @@ program LandauWangPotts
 
     ! Main loop
     do i = 1, n_iter
+     !   print*, i
         ! Each step attemps N spin flips
         do j = 1, N
             ! propose random spin flip
@@ -139,7 +141,7 @@ program LandauWangPotts
             print*, "ln_n_density:", int(ln_n_density) 
             print*, "f: ", f
         
-            call check_histogram(hist, flatness, flat)
+            call check_histogram(hist, flatness, flat, Emin, Emax, num_E)
             if ( flat ) then
                 print*, "Flat histogram, reducing f and resetting histogram..."
                 print*, "N MCS", i
@@ -179,7 +181,7 @@ program LandauWangPotts
     print*, "Writing density of states to file..."
 
     do i = 1, num_E
-        E = Emin + (i-1) * h
+        E = Emin + (i-1)
         write(20,*) E, ln_n_density(abs(E))
     end do
     close(20)
@@ -203,13 +205,14 @@ program LandauWangPotts
 
 contains   
 
-subroutine initialize(spins, hist, f, f_initial, ln_n_density, in, L)
+subroutine initialize(spins, hist, f, f_initial, ln_n_density, in, L, Emin, Emax)
     implicit none
-    integer, intent(inout) :: spins(:), hist(:), in(:,:)
-    real(8), intent(inout) :: ln_n_density(:)
+    integer, intent(in) :: L, Emin, Emax
+    integer, intent(inout) :: spins(:), hist(abs(Emax):abs(Emin)), in(0:1,L)
+    real(8), intent(inout) :: ln_n_density(abs(Emax):abs(Emin))
     real(8), intent(out) :: f
     real(8), intent(in) :: f_initial
-    integer, intent(in) :: L
+
 
     ! initialize the lattice
     spins = 1
@@ -236,12 +239,12 @@ end subroutine
 
 subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
     implicit none
-    integer, intent(inout) :: spins(:), hist(:)
     integer, intent(in) :: Emax, Emin 
+    integer, intent(inout) :: spins(:), hist(abs(Emax):abs(Emin))
     real(8) :: i
     real :: r1279
-    real(8), intent(inout) :: f, ln_n_density(:)
-    integer :: x, y, pos, energy_index
+    real(8), intent(inout) :: f, ln_n_density(abs(Emax):abs(Emin))
+    integer :: pos
     integer :: N, L, q_new, k
     real(8) :: p
     integer, intent(inout) :: E
@@ -271,10 +274,15 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
 
     if (E2.gt.Emax) then
         ! Move rejected
+    !    print*, "Im exiting because E2 > Emax"
+    !    print*, E2, Emax
+    !    print*, spins
+  !      stop
         return
     end if
 
-    call transition_probability(E1, E2, ln_n_density, p) 
+  !  print*, delta_E
+    call transition_probability(E1, E2, ln_n_density, p, Emin, Emax) 
 
     if (p.ge.1) then
         ! Move accepted
@@ -284,12 +292,18 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
         i = r1279()
         if (i.lt.p) then
             ! Move accepted by luck
+!            print*, "Move accepted by luck", i, p
             spins(pos) = q_new
             E = E2
         else
             ! Move rejected
+!            print*, "Move rejected", i, p  
             E = E1
         end if
+
+  !      if (p.eq.0) then
+ !           stop
+  !      end if
     end if
 
     ! actualiza ln_n_density 
@@ -299,20 +313,41 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
 
 end subroutine
 
-subroutine transition_probability(E1, E2, ln_n_density, p)
+subroutine transition_probability(E1, E2, ln_n_density, p, Emin, Emax)
     implicit none
-    integer, intent(in) :: E1, E2
-    real(8), intent(in) :: ln_n_density(:)
+    integer, intent(in) :: E1, E2, Emin, Emax
+    real(8), intent(in) :: ln_n_density(abs(Emax):abs(Emin))
     real(8), intent(out) :: p
 
-    p = min(1.d0, exp(ln_n_density(abs(E1)) - ln_n_density(abs(E2))))
+!    print*, "E1", E1
+!    print*, "E2", E2
+!    print*, "ln_n_density(E1)", ln_n_density(abs(E1))
+!    print*, "ln_n_density(E2)", ln_n_density(abs(E2))
+
+
+    if (ln_n_density(abs(E1)) - ln_n_density(abs(E2)).gt.600) then
+        p = 1.d0
+    else if (ln_n_density(abs(E1)) - ln_n_density(abs(E2)).lt.-600) then
+        p = 0.d0
+    else
+  !      print*, ln_n_density(abs(E1)) - ln_n_density(abs(E2))
+        p = min(1.d0, exp(ln_n_density(abs(E1)) - ln_n_density(abs(E2))))
+        
+!    else
+!        print*, "ln_n_density(E1)", ln_n_density(abs(E1))
+!        print*, "ln_n_density(E2)", ln_n_density(abs(E2))
+!        print*, "E1", E1
+!        print*, "E2", E2
+!        p = 0.d0
+     !   print*, "p = 0"
+    end if
 
 
 end subroutine
 
 subroutine generate_nbr(L, in, nbr)
     implicit none
-    integer, intent(in) :: L, in(:,:)
+    integer, intent(in) :: L, in(0:1,L)
     integer, intent(out) :: nbr(:, :)
     integer :: x, y, i
 
@@ -369,10 +404,12 @@ Subroutine magnetization(s, L, M)
 End Subroutine
 
 
-subroutine check_histogram(hist, x, flat)
+subroutine check_histogram(hist, x, flat, Emin, Emax, num_E)
     implicit none
-    integer, intent(in) :: hist(:)
+    integer, intent(in) :: Emin, Emax, num_E
+    integer, intent(in) :: hist(abs(Emax):abs(Emin))
     integer :: k, err
+    integer :: E_indx
     real(8), intent(in) :: x
     logical, intent(out) :: flat
     real(8) :: sum_hist
@@ -382,12 +419,13 @@ subroutine check_histogram(hist, x, flat)
 
     sum_hist = sum(hist)
 
-    avg_hist = sum_hist / size(hist > 0)
+    avg_hist = sum_hist / num_E
 
     err = 0
-    do k = 1, size(hist)
+    do k = 1, num_E
+        E_indx = Emin + (k-1)
         ! si algun dels valors no compleix la condicio
-        if ((hist(k) < (x * avg_hist)).and.(hist(k) > 0)) then
+        if ((hist(abs(E_indx)) < (x * avg_hist)).and.(hist(abs(E_indx)) > 0)) then
             err = err + 1
         end if
     end do
