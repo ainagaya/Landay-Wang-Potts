@@ -20,43 +20,32 @@ program thermodynamics
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
-    ! f_initial : initial value of the modification factor f
-    ! f_final : final value of the modification factor f
-    ! E_min : minimum energy
-    ! E_max : maximum energy
-    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-7)
+    integer, parameter ::  q = 2, L = 10,  n_iter = 1000000, z = 4, num_T = 500
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
-    real(8), parameter :: T_min = 1/2.d0, T_max = 1.d0/0.002d0, flatness=0.95
+    real(8), parameter :: T_min = 1/2.d0, T_max = 1.d0/0.002d0
 
     ! Variables
     ! N : number of spins
     ! i, j : loop variables
     ! Emax, Emin : maximum and minimum energy
-    integer :: N, i, j, Emax, Emin, k, num_E, E1, E2, E
+    integer :: N, i, Emax, Emin, k, num_E, E
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
     real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:), energy_array(:)
-    ! f : modification factor
-    ! p : probability of accepting a move
-    real(8) :: f, p
-    ! E, E1, E2 : store energy values
-    ! ln_A : constant to normalize the density of states
+    ! E, : store energy values
+    ! A : constant to normalize the density of states
     ! beta : inverse temperature
     ! internal_en : internal energy value
     ! h : step size
     ! free_en : free energy value
     ! S : entropy value
-    real(8) :: ln_A, beta, internal_en, h, free_en, S, T, T_interval, specific_heat, beta_min, beta_interval
-
-    ! flat : flag to check if the histogram is flat
-    logical :: flat
+    real(8) :: A, beta, internal_en, free_en, S, T, T_interval, specific_heat, beta_min, beta_interval
 
     ! verbose output
     logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
-    character(len=23) :: current_run
+    character(len=8) :: current_run
 
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
@@ -66,23 +55,15 @@ program thermodynamics
     ! define the energy range
     ! TO-DO: drop out energies out of range, diminish Emax.
     Emin = -z*N/2
-    Emax = 0
+    Emax = int(Emin*0.2)
 
     num_E = abs(Emax - Emin) + 1
-    ! h : step size
-    h = 1
 
-    allocate(ln_n_density(num_E))
-    allocate(ln_n_norm(num_E))
-    allocate(energy_density(num_E))
-    allocate(energy_array(num_E))
+    allocate(ln_n_density(abs(Emax):abs(Emin)))
+    allocate(ln_n_norm(abs(Emax):abs(Emin)))
+    allocate(energy_density(abs(Emax):abs(Emin)))
+    allocate(energy_array(abs(Emax):abs(Emin)))
 
-    ! Build energy array
-    do i = 1, num_E 
-        energy_array(i) = Emin + (i-1) * h
-    end do
-
-    print*, "energy_array: ", energy_array
 
     print*, "Initializing system..."
     print*, "Parameters of the run: "
@@ -96,28 +77,30 @@ program thermodynamics
     write (strL, "(I2)") L
     write (strMCS, "(I8)") n_iter
 
-    current_run = "_q" // trim(strq) // "_L" // trim(strL) // "_niter" // trim(strMCS)
-
+    current_run = "_q" // trim(strq) // "_L" // trim(strL)
     open(20, file='ln_n_density' // trim(current_run) // '.dat', status='old')
 
     do i = 1, num_E
-        read(20,*) energy_array(i), ln_n_density(i)
+        E = Emin + (i-1)
+        read(20,*) energy_array(abs(E)), ln_n_density(abs(E))
     end do
+
+    print*, "energy array:", energy_array
   
     print*, "Normalizing density of states..."
 
-    ln_A = log(real(q)) - ln_n_density(num_E)
+    A = log(real(q)) - ln_n_density(abs(Emin))
 
-    print*, log(real(q))
-    print*, (ln_n_density(num_E))
-    print*, "ln_A: ", ln_A
+    print*, "A: ", A
 
     do i = 1, num_E
+        E = Emin + (i-1)
 
-        if (ln_n_density(i) > 0) then
-            ln_n_norm(i) = ln_n_density(i) + ln_A
+        if (ln_n_density(abs(E)) > 0) then
+            ln_n_norm(abs(E)) = ln_n_density(abs(E)) + A
+            print*, "ln_n_norm(abs(E))", ln_n_norm(abs(E)), "ln_n_density(abs(E))", ln_n_density(abs(E)), "A", A
         else
-            ln_n_norm(i) = 0
+            ln_n_norm(abs(E)) = 0
         end if
     
     end do
@@ -127,9 +110,8 @@ program thermodynamics
     print*, "Writing normalized density of states to file..."
 
     do i = 1, num_E
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, j)
-        write(20,*) real(E)/N, ln_n_norm(j)
+        E = Emin + (i-1)
+        write(20,*) real(E)/N, ln_n_norm(abs(E))
     end do
     close(20)
 
@@ -143,17 +125,17 @@ program thermodynamics
     do i = 0, num_T
         T = T_min + T_interval*i
         beta = 1/T
-        call internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, h, specific_heat)
+        call internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, Emax, specific_heat)
         print*, "Internal energy at beta = ", beta, " is: ", internal_en, "per site", internal_en/N
-        call free_energy(ln_n_norm, beta, free_en, Emin, h)
+        call free_energy(ln_n_norm, beta, free_en, Emin, Emax)
         print*, "Free energy at beta = ", beta, " is: ", free_en, "per site", free_en/N
         call entropy(internal_en, free_en, beta, S)
         print*, "Entropy at beta = ", beta, " is: ", S, "per site", S/N
-        call compute_energy_density(ln_n_norm, beta, E, Emin, h, energy_density)
+        call compute_energy_density(ln_n_norm, beta, E, Emin, Emax, energy_density)
         write(10,*) beta, internal_en/N, free_en/N, S/N, specific_heat/N
-        do k = 1, z*N/2
-            E = Emin + (k-1) * h
-            write(11,*) 1.d0/beta, energy_density(k), E
+        do k = 1, num_E
+            E = Emin + (k-1)
+            write(11,*) 1.d0/beta, energy_density(abs(E)), E
         end do
         write(11,*) ""
         write(11,*) ""
@@ -170,17 +152,17 @@ program thermodynamics
     beta = beta_min
     do i = 0, num_T
         beta = beta_min + beta_interval*i
-        call internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, h, specific_heat)
+        call internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, Emax, specific_heat)
         print*, "Internal energy at beta = ", beta, " is: ", internal_en, "per site", internal_en/N
-        call free_energy(ln_n_norm, beta, free_en, Emin, h)
+        call free_energy(ln_n_norm, beta, free_en, Emin, Emax)
         print*, "Free energy at beta = ", beta, " is: ", free_en, "per site", free_en/N
         call entropy(internal_en, free_en, beta, S)
         print*, "Entropy at beta = ", beta, " is: ", S, "per site", S/N
-        call compute_energy_density(ln_n_norm, beta, E, Emin, h, energy_density)
+        call compute_energy_density(ln_n_norm, beta, E, Emin, Emax, energy_density)
         write(12,*) beta, internal_en/N, free_en/N, S/N, specific_heat/N
-        do k = 1, z*N/2
-            E = Emin + (k-1) * h
-            write(11,*) 1.d0/beta, energy_density(k), E
+        do k = 1, num_E
+            E = Emin + (k-1)
+            write(11,*) 1.d0/beta, energy_density(abs(E)), E
         end do
         write(11,*) ""
         write(11,*) ""
@@ -189,66 +171,48 @@ program thermodynamics
 
     close(11)
 
+    print*, "Done!"
 
+ !   deallocate(ln_n_density)
+    deallocate(ln_n_norm)
+    deallocate(energy_density)
+    deallocate(energy_array)
 
 
 
 contains   
 
 
-subroutine e_index(E, energy_array, i)
+
+subroutine internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, Emax, specific_heat)
     implicit none
-    integer, intent(in) :: E
-    integer, intent(out) :: i
-    real(8), intent(in) :: energy_array(:)
-
-    ! REVISIT THIS
-    do i = 1, num_E
-        if (energy_array(i).eq.E) then
-            return
-        end if
-    end do
-
-    print*, "did not found index for E: ", E
-    print*, "f", f
-    stop
-
-end subroutine
-
-
-subroutine internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, h, specific_heat)
-    implicit none
-    real(8), intent(in) :: ln_n_norm(:)
-    real(8), dimension(size(ln_n_norm)) :: ln_n_norm_minus
+    integer :: Emin, Emax, i
+    real(8), intent(in) :: ln_n_norm(abs(Emax):abs(Emin))
+    real(8), dimension(abs(Emax):abs(Emin)) :: ln_n_norm_minus
     real(8), intent(in) :: beta
-    integer :: Emin, i ,k
     real(8), intent(out) :: internal_en, specific_heat
-    real(8) :: numerator, denominator, lambda, h, numerator_2
+    real(8) :: numerator, denominator, lambda, numerator_2
     integer :: E
 
     numerator = 0
     numerator_2 = 0
     denominator = 0
 
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        ln_n_norm_minus(i) = ln_n_norm(i) - beta*E
+    do i = 1, size(ln_n_norm_minus)
+        E = Emin + (i-1) 
+        ln_n_norm_minus(abs(E)) = ln_n_norm(abs(E)) - beta*E
     end do
 
     lambda = maxval(ln_n_norm_minus)
 
-    do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
+    do i = 1, size(ln_n_norm_minus)
+        E = Emin + (i-1) 
 
-        if (debug) then
-            print*, E
-            print*, "ln_n_norm(E)", ln_n_norm(i), E, beta, lambda
-        end if
-
-        numerator = numerator + exp(ln_n_norm_minus(k) - lambda) * E 
-        numerator_2 = numerator_2 + exp(ln_n_norm_minus(k) - lambda) * E**2
-        denominator = denominator + exp(ln_n_norm_minus(k) - lambda)
+        print*, "E: ", E, "ln_n_norm_minus: ", ln_n_norm_minus(abs(E)), "lambda", lambda
+        print*, "(ln_n_norm_minus - lambda): ", (ln_n_norm_minus(abs(E)) - lambda)
+        numerator = numerator + exp(ln_n_norm_minus(abs(E)) - lambda) * E 
+        numerator_2 = numerator_2 + exp(ln_n_norm_minus(abs(E)) - lambda) * E**2
+        denominator = denominator + exp(ln_n_norm_minus(abs(E)) - lambda)
     end do
 
     print*, "numerator: ", numerator
@@ -262,29 +226,28 @@ subroutine internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, h, 
 
 end subroutine
 
-subroutine free_energy(ln_n_norm, beta, free_en, Emin, h)
+subroutine free_energy(ln_n_norm, beta, free_en, Emin, Emax)
     implicit none
-    real(8), intent(in) :: ln_n_norm(:)
-    real(8), dimension(size(ln_n_norm)) :: ln_n_norm_minus
+    integer :: Emin, Emax, i
+    real(8), intent(in) :: ln_n_norm(abs(Emax):abs(Emin))
+    real(8), dimension(abs(Emax):abs(Emin)) :: ln_n_norm_minus
     real(8), intent(in) :: beta
-    integer :: Emin, i, k
     real(8), intent(out) :: free_en
-    real(8) :: numerator, h, lambda
+    real(8) :: numerator, lambda
     integer :: E
 
     numerator = 0
 
     do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        ln_n_norm_minus(i) = ln_n_norm(i) - beta*E
+        E = Emin + (i-1)
+        ln_n_norm_minus(abs(E)) = ln_n_norm(abs(E)) - beta*E
     end do
 
     lambda = maxval(ln_n_norm_minus)
 
     do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
-        numerator = numerator + exp ( ln_n_norm_minus(k) - lambda) 
+        E = Emin + (i-1) 
+        numerator = numerator + exp ( ln_n_norm_minus(abs(E)) - lambda) 
     end do    
 
     free_en = -1/beta * (lambda + log (numerator))
@@ -302,20 +265,18 @@ subroutine entropy(U, F, beta, S)
 
 end subroutine
 
-subroutine compute_energy_density(ln_n_norm, beta, E, Emin, h, energy_density)
+subroutine compute_energy_density(ln_n_norm, beta, E, Emin, Emax, energy_density)
     implicit none
-    real(8), intent(in) :: ln_n_norm(:)
     real(8), intent(in) :: beta
     integer, intent(out) :: E
-    integer :: Emin, i, k
-    real(8) :: h
-    real(8), intent(out) :: energy_density(:)
+    integer :: Emin, Emax, i
+    real(8), intent(out) :: energy_density(abs(Emax):abs(Emin))
+    real(8), intent(in) :: ln_n_norm(abs(Emax):abs(Emin))
 
     do i = 1, size(ln_n_norm)
-        E = Emin + (i-1) * h
-        call e_index(E, energy_array, k)
-        if (ln_n_norm(k).ne.0) then
-            energy_density(i) = exp(ln_n_norm(k)) * exp(-beta*E)
+        E = Emin + (i-1)
+        if (ln_n_norm(abs(E)).ne.0) then
+            energy_density(abs(E)) = exp(ln_n_norm(abs(E))) * exp(-beta*E)
         end if
     end do
 
