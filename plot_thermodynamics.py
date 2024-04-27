@@ -26,7 +26,7 @@ with open("ferdi.D", 'r') as file:
 
 betas_control = [float(d[0]) for d in data_control]
 F_control = [float(d[1]) for d in data_control]
-ueng_control = [float(d[2]) for d in data_control]
+ueng_control = [(float(d[2])-2)/2 for d in data_control]
 act_control = [float(d[3]) for d in data_control]
 S_control = [float(d[4]) for d in data_control]
 cht_control = [float(d[5]) for d in data_control]
@@ -60,7 +60,7 @@ print("")
 # Plot the data with smaller points
 plt.plot([1/beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
 plt.plot([0.5*1/beta for beta in betas_control], ueng_control, '.', label='Control', markersize=1)
-#plt.xlim([0, 8])
+plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('internal energy')
 plt.title('Internal Energy vs Beta')
@@ -71,7 +71,7 @@ plt.show()
 # Plot the data with points
 plt.plot([1/beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
 plt.plot([0.5*1/beta for beta in betas_control], F_control, '.', label='Control', markersize=1)
-#plt.xlim([0, 8])
+plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('free energy')
 plt.title('Free Energy vs Beta')
@@ -82,7 +82,7 @@ plt.show()
 # Plot the data with points
 plt.plot([1/beta for beta in betas], entropies, 'o', label='Data', markersize=1)
 plt.plot([0.5*1/beta for beta in betas_control], S_control, '.', label='Control', markersize=1)
-#plt.xlim([0, 8])
+plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('entropy')
 plt.title('Entropy vs Beta')
@@ -93,7 +93,7 @@ plt.show()
 # Plot the data with points
 plt.plot([1/beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
 plt.plot([0.5*1/beta for beta in betas_control], cht_control, '.', label='Control', markersize=1)
-#plt.xlim([0, 8])
+plt.xlim([0, 8])
 plt.xlabel('1/beta')
 plt.ylabel('Specific Heat')
 plt.title('Specific heat vs Beta')

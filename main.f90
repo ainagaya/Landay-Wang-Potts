@@ -25,7 +25,7 @@ program LandauWangPotts
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
     ! E_max : maximum energy
-    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-6)
+    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-8)
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
     real(8), parameter :: T_min = 1.d0, T_max = 1.d0/0.004d0, flatness=0.8
@@ -61,7 +61,7 @@ program LandauWangPotts
     ! verbose output
     logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
-    character(len=23) :: current_run
+    character(len=8) :: current_run
 
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
@@ -74,20 +74,21 @@ program LandauWangPotts
     ! define the energy range
     ! TO-DO: drop out energies out of range, diminish Emax.
     Emin = -z*N/2
-    Emax = 0
+    Emax = Emin*0.2
 
     num_E = abs(Emax - Emin) + 1
     ! h : step size
     h = 1
 
     allocate(spins(N))
-    allocate(hist(Emax:abs(Emin)))
-    allocate(ln_n_density(Emax:abs(Emin)))
-    allocate(ln_n_norm(Emax:abs(Emin)))
-    allocate(energy_density(Emax:abs(Emin)))
+    allocate(hist(abs(Emax):abs(Emin)))
+    allocate(ln_n_density(abs(Emax):abs(Emin)))
+    allocate(ln_n_norm(abs(Emax):abs(Emin)))
+    allocate(energy_density(abs(Emax):abs(Emin)))
     allocate(nbr(z, N))
     allocate(in(0:1, N))
-    
+
+
     ! call random_init(.true., .true.)
     call setr1279(seed)
 
@@ -108,7 +109,7 @@ program LandauWangPotts
     write (strMCS, "(I8)") n_iter
 
     print*, "q: ", strq
-    current_run = "_q" // trim(strq) // "_L" // trim(strL) // "_niter" // trim(strMCS)
+    current_run = "_q" // trim(strq) // "_L" // trim(strL)
 
     call initialize(spins, hist, f, f_initial, ln_n_density, in, L)
     call generate_nbr(L, in, nbr)
@@ -122,7 +123,7 @@ program LandauWangPotts
         do j = 1, N
             ! propose random spin flip
             call propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
-            if (mod(E,2).ne.0) then
+            if ((mod(E,2).ne.0).and.(q.eq.2)) then
                 print*, "ERROR: E is not even"
                 print*, "spins", spins
                 print*, "E", E
@@ -246,31 +247,14 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
     integer, intent(inout) :: E
     integer :: E1, E2, delta_E
 
-    ! propose a random spin flip between 0 and 1
-    i = r1279()
-
-    ! convert the random number to a spin
-    pos = int(i*N) + 1
+    ! propose a random spin flip between 0 and 1. convert the random number to a spin
+    pos = mod(int(N*r1279()),N)+1
 
     q_new = spins(pos)
 
     do while (q_new.eq.spins(pos))
-        i = r1279()
-        q_new = int(i*q) + 1
+        q_new = mod(int(q*r1279()),q) + 1
     end do
-
-
-    !!!!! PROBLEMS HERE FOR SMALL F !!!!!
-    call energy(spins, nbr, L, z, E1)
-
-    if (E1.ne.E) then
-        print*, "spins", spins
-        print*, "q_new", q_new
-        print*, "pos", pos
-        print*, "ln_n_density", ln_n_density
-        print*, "ERROR: E does not match E1" 
-        stop
-    end if
 
     E1 = E
 
@@ -284,6 +268,11 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
     end do
 
     E2 = E1 + delta_E
+
+    if (E2.gt.Emax) then
+        ! Move rejected
+        return
+    end if
 
     call transition_probability(E1, E2, ln_n_density, p) 
 

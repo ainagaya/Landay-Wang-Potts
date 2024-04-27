@@ -10,7 +10,7 @@ args = parser.parse_args()
 data = []
 with open(args.filename, 'r') as file:
     for line in file:
-        energy, density, caca = line.strip().split()
+        energy, density= line.strip().split()
         if float(density) != 0:
             data.append((float(energy), float(density)))
 

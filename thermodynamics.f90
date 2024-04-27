@@ -20,7 +20,7 @@ program thermodynamics
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 10,  n_iter = 100000, z = 4, seed = 11012000,  num_T = 500
+    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, seed = 11012000,  num_T = 500
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
@@ -56,7 +56,7 @@ program thermodynamics
     ! verbose output
     logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
-    character(len=20) :: current_run
+    character(len=23) :: current_run
 
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
@@ -129,7 +129,7 @@ program thermodynamics
     do i = 1, num_E
         E = Emin + (i-1) * h
         call e_index(E, energy_array, j)
-        write(20,*) E/N, ln_n_norm(j)
+        write(20,*) real(E)/N, ln_n_norm(j)
     end do
     close(20)
 
