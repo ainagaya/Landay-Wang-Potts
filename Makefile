@@ -1,7 +1,7 @@
 # Fortran compiler
 FC=gfortran
 
-CFLAGS = -g -fcheck=all -Wall -Wextra -pedantic -std=f2008 -fbacktrace -ffpe-trap=zero,overflow,underflow -finit-real=nan -finit-integer=-9999
+#CFLAGS = -g -fcheck=all -Wall -Wextra -pedantic -std=f2008 -fbacktrace -ffpe-trap=zero,overflow,underflow -finit-real=nan -finit-integer=-9999
 
 all: potts_LW.o thermodynamics.o
 
@@ -18,11 +18,11 @@ thermo: thermodynamics.o
 	./$^
 	
 .PHONY:	plot1
-plot1: ln_n_density_q_2_L10.dat
+plot1: ln_n_density_q2_L10.dat
 	python3 plot_ln_density.py $^
 	
 .PHONY:	plot2
-plot2: Results_Ising/res_ising_q_2_L20_niter_1000000_beta.dat
+plot2: res_ising_q2_L10_beta.dat
 	python3 plot_thermodynamics.py $^
 
 

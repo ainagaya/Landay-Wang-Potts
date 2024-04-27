@@ -20,7 +20,7 @@ program thermodynamics
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 10,  n_iter = 1000000, z = 4, num_T = 500
+    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, num_T = 500
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
     real(8), parameter :: T_min = 1/2.d0, T_max = 1.d0/0.002d0
@@ -73,7 +73,7 @@ program thermodynamics
     print*, "T_min: ", T_min
     print*, "T_max: ", T_max
 
-    write (strq, "(I2)")  q
+    write (strq, "(I1)")  q
     write (strL, "(I2)") L
     write (strMCS, "(I8)") n_iter
 
@@ -98,7 +98,7 @@ program thermodynamics
 
         if (ln_n_density(abs(E)) > 0) then
             ln_n_norm(abs(E)) = ln_n_density(abs(E)) + A
-            print*, "ln_n_norm(abs(E))", ln_n_norm(abs(E)), "ln_n_density(abs(E))", ln_n_density(abs(E)), "A", A
+   !         print*, "ln_n_norm(abs(E))", ln_n_norm(abs(E)), "ln_n_density(abs(E))", ln_n_density(abs(E)), "A", A
         else
             ln_n_norm(abs(E)) = 0
         end if
@@ -208,8 +208,8 @@ subroutine internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, Ema
     do i = 1, size(ln_n_norm_minus)
         E = Emin + (i-1) 
 
-        print*, "E: ", E, "ln_n_norm_minus: ", ln_n_norm_minus(abs(E)), "lambda", lambda
-        print*, "(ln_n_norm_minus - lambda): ", (ln_n_norm_minus(abs(E)) - lambda)
+!        print*, "E: ", E, "ln_n_norm_minus: ", ln_n_norm_minus(abs(E)), "lambda", lambda
+!        print*, "(ln_n_norm_minus - lambda): ", (ln_n_norm_minus(abs(E)) - lambda)
         numerator = numerator + exp(ln_n_norm_minus(abs(E)) - lambda) * E 
         numerator_2 = numerator_2 + exp(ln_n_norm_minus(abs(E)) - lambda) * E**2
         denominator = denominator + exp(ln_n_norm_minus(abs(E)) - lambda)
