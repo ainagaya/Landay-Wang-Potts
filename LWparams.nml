@@ -1,5 +1,7 @@
 &LWparams
 q=10
 L=20
+seed=11012000
+flatness=0.8
 /
 
