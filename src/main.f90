@@ -47,9 +47,6 @@ program LandauWangPotts
     real(8) :: f
     ! flat : flag to check if the histogram is flat
     logical :: flat
-
-    ! verbose output
-    logical, parameter :: debug = .false.
     ! current_run : string to store the current run parameters
     character(len=8) :: current_run
     character(len=2) :: strq, strL
