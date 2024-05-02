@@ -1,14 +1,23 @@
 import argparse
+import f90nml
 
 import matplotlib.pyplot as plt
+
 # Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('filename', help='Input file name')
-args = parser.parse_args()
+namelist_file="LWparams.nml"
+
+# Read the namelist file
+namelist = f90nml.read(namelist_file)
+
+# Get the filename parameter from the namelist
+q = namelist['LWparams']['q']
+L = namelist['LWparams']['L']
+
+filename="res_q" + str(q) + "_L" + str(L) + ".dat"
 
 # Read the data from the file
 data = []
-with open(args.filename, 'r') as file:
+with open(filename, 'r') as file:
     for line in file:
         print(line)
         beta, internal_energy, free_energy, entropy, specific_heat = line.strip().split()
@@ -54,95 +63,103 @@ print("")
 
 
 ################ 1/BETA 
-
-
-
 # Plot the data with smaller points
-plt.plot([1/beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], ueng_control, '.', label='Control', markersize=1)
-plt.xlim([0, 8])
-plt.xlabel('1/beta')
-plt.ylabel('internal energy')
-plt.title('Internal Energy vs Beta')
+plt.plot([1/beta for beta in betas], internal_energies, 'o', label=f'L={L}', markersize=1)
+if q == 2:
+    plt.plot([0.5*1/beta for beta in betas_control], ueng_control, '.', label='Ising',  markersize=1)
+plt.xlim([0.66, 0.72])
+plt.xlabel('T')
+plt.ylabel('U(L,T)/N')
+#plt.title('Internal Energy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "int_energy.png")
+plt.savefig(filename + "int_energy.png")
 plt.show()
 
 # Plot the data with points
-plt.plot([1/beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], F_control, '.', label='Control', markersize=1)
-plt.xlim([0, 8])
-plt.xlabel('1/beta')
-plt.ylabel('free energy')
-plt.title('Free Energy vs Beta')
+plt.plot([1/beta for beta in betas], free_energies, 'o', label=f'L={L}', markersize=1)
+if q == 2:
+    plt.plot([0.5*1/beta for beta in betas_control], F_control, '.', label='Ising', markersize=1)
+plt.xlim([0, 1.5])
+plt.ylim([-4, -1.8])
+plt.xlabel('T')
+plt.ylabel('F(L,T)/N')
+#plt.title('Free Energy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "free_energy.png")
+plt.savefig(filename + "free_energy.png")
 plt.show()
 
 # Plot the data with points
-plt.plot([1/beta for beta in betas], entropies, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], S_control, '.', label='Control', markersize=1)
-plt.xlim([0, 8])
-plt.xlabel('1/beta')
-plt.ylabel('entropy')
-plt.title('Entropy vs Beta')
+plt.plot([1/beta for beta in betas], entropies, 'o', label=f'L={L}', markersize=1)
+if q == 2:
+    plt.plot([0.5*1/beta for beta in betas_control], S_control, '.', label='Ising', markersize=1)
+plt.xlim([0, 1.5])
+plt.xlabel('T')
+plt.ylabel('S(L,T)/N')
+#plt.title('Entropy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "entropy.png")
+plt.savefig(filename + "entropy.png")
 plt.show()
 
 # Plot the data with points
-plt.plot([1/beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
-plt.plot([0.5*1/beta for beta in betas_control], cht_control, '.', label='Control', markersize=1)
-plt.xlim([0, 8])
-plt.xlabel('1/beta')
-plt.ylabel('Specific Heat')
-plt.title('Specific heat vs Beta')
+plt.plot([1/beta for beta in betas], specific_heats, '-', label=f'L={L}', markersize=1)
+if q == 2:
+    plt.plot([0.5*1/beta for beta in betas_control], cht_control, '.', label='Ising', markersize=1)
+plt.xlim([0.701, 0.703])
+plt.xlabel('T')
+plt.ylabel('C(L,T)/N')
+#plt.title('Specific heat vs Beta')
 plt.legend()
-plt.savefig(args.filename + "spec_heat.png")
+plt.xticks(ticks=[0.701, 0.702, 0.703, 0.704])
+plt.savefig(filename + "spec_heat.png")
 plt.show()
+
 
 ################### BETA
 
 # Plot the data with smaller points
 plt.plot([beta for beta in betas], internal_energies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], ueng_control, '.', label='Ising',  markersize=1)
+if q == 2:
+    plt.plot([2*beta for beta in betas_control], ueng_control, '.', label='Ising',  markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('internal energy')
 plt.title('Internal Energy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "int_energy_beta.png")
+plt.savefig(filename + "int_energy_beta.png")
 plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], F_control, '.', label='Ising', markersize=1)
+if q == 2:
+    plt.plot([2*beta for beta in betas_control], F_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('free energy')
 plt.title('Free Energy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "free_energy_beta.png")
+plt.savefig(filename + "free_energy_beta.png")
 plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], entropies, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], S_control, '.', label='Ising', markersize=1)
+if q == 2:
+    plt.plot([2*beta for beta in betas_control], S_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('entropy')
 plt.title('Entropy vs Beta')
 plt.legend()
-plt.savefig(args.filename + "entropy_beta.png")
+plt.savefig(filename + "entropy_beta.png")
 plt.show()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
-plt.plot([2*beta for beta in betas_control], cht_control, '.', label='Ising', markersize=1)
+if q == 2:
+    plt.plot([2*beta for beta in betas_control], cht_control, '.', label='Ising', markersize=1)
 #plt.xlim([0, 8])
 plt.xlabel('beta')
 plt.ylabel('Specific Heat')
 plt.title('Specific heat vs Beta')
 plt.legend()
-plt.savefig(args.filename + "spec_heat_beta.png")
+plt.savefig(filename + "spec_heat_beta.png")
 plt.show()

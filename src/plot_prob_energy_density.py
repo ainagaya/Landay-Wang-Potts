@@ -1,14 +1,23 @@
 import argparse
+import f90nml
 
 import matplotlib.pyplot as plt
+
 # Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('filename', help='Input file name')
-args = parser.parse_args()
+namelist_file="LWparams.nml"
+
+# Read the namelist file
+namelist = f90nml.read(namelist_file)
+
+# Get the filename parameter from the namelist
+q = namelist['LWparams']['q']
+L = namelist['LWparams']['L']
+
+filename="energy_density_q" + str(q) + "_L" + str(L) + ".dat"
 
 # Read the data from the file
 data = []
-with open(args.filename, 'r') as file:
+with open(filename, 'r') as file:
     for line in file:
         T, density, energy= line.strip().split()
         if float(density) != 0:
@@ -27,12 +36,12 @@ for T, data_points in T_data.items():
     energies = [float(d[1]) for d in data_points]
     
     # Plot the data with smaller points
-    plt.plot([energy for energy in energies], energy_densities, 'o', label='T = {T}', markersize=1)
+    plt.plot([energy for energy in energies], energy_densities, 'o', label=f'T = {T:.5f}', markersize=1)
   #  plt.xlim([0, 8])
     plt.xlabel('Energy/N')
     plt.ylabel('g(e)exp(-betaE)')
-    plt.title(f'g(e)exp(-betaE) vs Energy/N (T = {T})')
+    plt.title(f'g(e)exp(-betaE) vs Energy/N (T = {T:.5f})')
     plt.legend()
-    plt.savefig(args.filename + f"energy_dens{T}.png")
+    plt.savefig(filename + f"energy_dens{T:.5f}.png")
     plt.clf()
 #    plt.show()

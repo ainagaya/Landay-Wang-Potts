@@ -18,12 +18,16 @@ thermo: thermodynamics.o
 	./$^
 	
 .PHONY:	plot1
-plot1: L_40_q_10/ln_n_density_q10_L40norm.dat
-	python3 plot_ln_density.py $^
+plot1: 
+	python3 src/plot_ln_density.py 
 	
 .PHONY:	plot2
-plot2: L_40_q_10/res_ising_q10_L40.dat
-	python3 plot_thermodynamics.py $^
+plot2: 
+	python3 src/plot_thermodynamics.py
+
+.PHONY:	plot3
+plot3: 
+	python3 src/plot_prob_energy_density.py
 
 
 .PHONY.: clean

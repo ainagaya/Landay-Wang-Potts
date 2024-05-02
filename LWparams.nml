@@ -4,4 +4,8 @@ L=20
 seed=11012000
 flatness=0.8
 /
+&Thermo
+T_min = 0.001
+T_max = 1.5
+/
 

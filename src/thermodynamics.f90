@@ -13,34 +13,45 @@ program thermodynamics
     integer, parameter :: z = 4, num_T = 10000
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
-    real(8), parameter :: T_min = 0.001d0, T_max = 1.5d0
+    real(8):: T_min, T_max
 
     ! Variables
     ! N : number of spins
-    ! i : loop variables
+    ! i, k : loop variables
     ! Emax, Emin : maximum and minimum energy
     ! E, : store energy values
-    integer :: N, i, Emax, Emin, k, num_E, E
+    integer :: N, i, k, Emax, Emin, num_E, E
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
+    ! energy_density : energy density values
+    ! energy_array : array to store energy values
     real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:), energy_array(:)
     ! A : constant to normalize the density of states
     ! beta : inverse temperature
     ! internal_en : internal energy value
-    ! h : step size
     ! free_en : free energy value
     ! S : entropy value
+    ! T : temperature value
+    ! T_interval : interval between temperatures
+    ! specific_heat : specific heat value
+    ! beta_min : minimum value of beta
+    ! beta_interval : interval between beta values
     real(8) :: A, beta, internal_en, free_en, S, T, T_interval, specific_heat, beta_min, beta_interval
     ! current_run : string to store the current run parameters
     character(len=8) :: current_run
-
+    ! strq, strL : strings to store the values of q and L
     character(len=2) :: strq, strL
 
     ! Read parameters from namelist file
     namelist /LWparams/ q, L, seed, flatness
+    namelist /Thermo/ T_min, T_max
 
     open(unit=10, file='LWparams.nml', status='old')
-    read(10, LWparams)
+    read(10, nml=LWparams)
+    close(10)
+
+    open(unit=10, file='LWparams.nml', status='old')
+    read(10, nml=Thermo)
     close(10)
 
     N = L*L
@@ -61,7 +72,7 @@ program thermodynamics
     print*, "T_min: ", T_min
     print*, "T_max: ", T_max
 
-    write (strq, "(I1)")  q
+    write (strq, "(I2)")  q
     write (strL, "(I2)") L
 
     current_run = "_q" // trim(strq) // "_L" // trim(strL)
@@ -85,7 +96,6 @@ program thermodynamics
 
         if (ln_n_density(abs(E)) > 0) then
             ln_n_norm(abs(E)) = ln_n_density(abs(E)) + A
-   !         print*, "ln_n_norm(abs(E))", ln_n_norm(abs(E)), "ln_n_density(abs(E))", ln_n_density(abs(E)), "A", A
         else
             ln_n_norm(abs(E)) = 0
         end if
@@ -106,7 +116,7 @@ program thermodynamics
 
     T_interval = (T_max - T_min) / num_T
 
-    open(10, file='res_ising' // current_run//'.dat')
+    open(10, file='res' // current_run//'.dat')
     open(11, file='energy_density' // current_run//'.dat')
 !    write(10, '(A)') "#beta    internal_energy/N   free_energy/N   entropy/N"
     T = T_min
@@ -194,10 +204,7 @@ subroutine internal_energy_specific_heat(ln_n_norm, beta, internal_en, Emin, Ema
         numerator = numerator + exp(ln_n_norm_minus(abs(E)) - lambda) * E 
         numerator_2 = numerator_2 + exp(ln_n_norm_minus(abs(E)) - lambda) * E**2
         denominator = denominator + exp(ln_n_norm_minus(abs(E)) - lambda)
-    end do
-
-    print*, "numerator: ", numerator
-    print*, "denominator: ", denominator    
+    end do   
 
     internal_en = numerator / denominator
 

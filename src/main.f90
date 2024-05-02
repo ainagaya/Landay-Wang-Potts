@@ -50,7 +50,6 @@ program LandauWangPotts
     ! current_run : string to store the current run parameters
     character(len=8) :: current_run
     character(len=2) :: strq, strL
-    character(len=8) :: strMCS
 
     ! random numbers generator
     real :: r1279
@@ -90,9 +89,8 @@ program LandauWangPotts
     print*, "E_min: ", Emin
     print*, "E_max: ", Emax
 
-    write (strq, "(I1)")  q
+    write (strq, "(I2)")  q
     write (strL, "(I2)") L
-    write (strMCS, "(I8)") n_iter
 
     print*, "q: ", strq
     current_run="_q"//trim(strq)//"_L"//trim(strL)
