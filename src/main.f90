@@ -17,45 +17,34 @@ program LandauWangPotts
     ! Initial parameters
     ! q : number of states a spin can take
     ! L : lattice size
+    ! seed : seed for the random number generator
+    integer :: q, L, seed
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
-    ! num_beta : number of beta values
-    integer :: q, L
-    integer, parameter ::  n_iter = 10000000, z = 4, seed = 11012000
+    integer, parameter ::  n_iter = 10000000, z = 4
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
     ! E_max : maximum energy
-    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-8)
-    ! beta_min : minimum value of the inverse temperature
-    ! beta_max : maximum value of the inverse temperature
-    real(8), parameter :: T_min = 1.d0, T_max = 1.d0/0.004d0, flatness=0.8
-
-    ! Variables
+    real(8), parameter :: f_initial = exp(1.0), f_final = exp(10e-5)
+    ! flatness : histogram flatness parameter
+    real(8) :: flatness
     ! N : number of spins
     ! i, j : loop variables
     ! Emax, Emin : maximum and minimum energy
+    ! num_E : number of energies
+    ! E : energy
     integer :: N, i, j, Emax, Emin, num_E, E
     ! spins : array of spins
     ! hist : energy histogram. Number of times each energy has been visited
     ! nbr : array of nearest neighbors
     ! in : array to apply periodic boundary conditions
-    integer, allocatable :: spins(:), hist(:), nbr(:,:)
-    integer, allocatable :: in(:, :)
+    integer, allocatable :: spins(:), hist(:), nbr(:,:), in(:, :)
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
-    real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:)
+    real(8), allocatable :: ln_n_density(:), ln_n_norm(:)
     ! f : modification factor
-    ! p : probability of accepting a move
     real(8) :: f
-    ! E, E1, E2 : store energy values
-    ! ln_A : constant to normalize the density of states
-    ! beta : inverse temperature
-    ! internal_en : internal energy value
-    ! h : step size
-    ! free_en : free energy value
-    ! S : entropy value
-
     ! flat : flag to check if the histogram is flat
     logical :: flat
 
@@ -70,7 +59,7 @@ program LandauWangPotts
     real :: r1279
 
     ! Read parameters from namelist file
-    namelist /LWparams/ q, L
+    namelist /LWparams/ q, L, seed, flatness
 
     open(unit=10, file='LWparams.nml', status='old')
     read(10, LWparams)
@@ -81,11 +70,8 @@ program LandauWangPotts
     N = L*L
 
     ! define the energy range
-    ! TO-DO: drop out energies out of range, diminish Emax.
     Emin = -z*N/2
     Emax = int(Emin*0.2)
-    ! Emax = 0
-
 
     num_E = abs(Emax - Emin) + 1
 
@@ -93,11 +79,8 @@ program LandauWangPotts
     allocate(hist(abs(Emax):abs(Emin)))
     allocate(ln_n_density(abs(Emax):abs(Emin)))
     allocate(ln_n_norm(abs(Emax):abs(Emin)))
-    allocate(energy_density(abs(Emax):abs(Emin)))
     allocate(nbr(z, N))
 
-
-    ! call random_init(.true., .true.)
     call setr1279(seed)
 
     print*, "Initializing system..."
@@ -109,8 +92,6 @@ program LandauWangPotts
     print*, "f_final: ", f_final
     print*, "E_min: ", Emin
     print*, "E_max: ", Emax
-    print*, "T_min: ", T_min
-    print*, "T_max: ", T_max
 
     write (strq, "(I1)")  q
     write (strL, "(I2)") L
@@ -130,7 +111,6 @@ program LandauWangPotts
 
     ! Main loop
     do i = 1, n_iter
-     !   print*, i
         ! Each step attemps N spin flips
         do j = 1, N
             ! propose random spin flip
@@ -143,7 +123,7 @@ program LandauWangPotts
             end if
         end do
 
-        if (mod(i, 1000).eq.0) then
+        if (mod(i, 10000).eq.0) then
             print*, "------------------------------------"
             print*, "Iteration: ", i
             print*, "spins: ", spins   
@@ -180,12 +160,6 @@ program LandauWangPotts
 
     print*, "Final density of states: ", ln_n_density
 
-!   From the final density of states, estimate the internal energy for different temperatures. By rescaling n(E) so that n(Egroundstate) = q, 
-!   we can also obtain the free energy F = and thus the entropy. Check that internal energy, entropy, and free
-!   energy densities agree (for different temperatures) with the exact results of Ferdinand and
-!   Fisher, that are computed by the program ferdinand.f written by Bernd Berg.   
-
-
     open(20, file='ln_n_density' // trim(current_run) // '.dat')
 
     print*, "Writing density of states to file..."
@@ -199,15 +173,13 @@ program LandauWangPotts
     print*, "Freeing memory: spins"
     deallocate(spins)
     print*, "Freeing memory: hist"
-!    deallocate(hist)
+    deallocate(hist)
     print*, "Freeing memory: ln_n_density"
-!    deallocate(ln_n_density)
-    print*, "Freeing memory: energy_density"
-!    deallocate(energy_density)
+    deallocate(ln_n_density)
     print*, "Freeing memory: nbr"
-!    deallocate(nbr)
+    deallocate(nbr)
     print*, "Freeing memory: in"
-!    deallocate(in)
+    deallocate(in)
 
 
     print*, "Program finished successfully"
@@ -284,14 +256,9 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
 
     if (E2.gt.Emax) then
         ! Move rejected
-    !    print*, "Im exiting because E2 > Emax"
-    !    print*, E2, Emax
-    !    print*, spins
-  !      stop
         return
     end if
 
-  !  print*, delta_E
     call transition_probability(E1, E2, ln_n_density, p, Emin, Emax) 
 
     if (p.ge.1) then
@@ -302,18 +269,13 @@ subroutine propose_flip(spins, N, L, hist, ln_n_density, f, Emax, Emin, E)
         i = r1279()
         if (i.lt.p) then
             ! Move accepted by luck
-!            print*, "Move accepted by luck", i, p
             spins(pos) = q_new
             E = E2
         else
             ! Move rejected
-!            print*, "Move rejected", i, p  
             E = E1
         end if
 
-  !      if (p.eq.0) then
- !           stop
-  !      end if
     end if
 
     ! actualiza ln_n_density 
@@ -329,27 +291,13 @@ subroutine transition_probability(E1, E2, ln_n_density, p, Emin, Emax)
     real(8), intent(in) :: ln_n_density(abs(Emax):abs(Emin))
     real(8), intent(out) :: p
 
-!    print*, "E1", E1
-!    print*, "E2", E2
-!    print*, "ln_n_density(E1)", ln_n_density(abs(E1))
-!    print*, "ln_n_density(E2)", ln_n_density(abs(E2))
-
-
     if (ln_n_density(abs(E1)) - ln_n_density(abs(E2)).gt.600) then
         p = 1.d0
     else if (ln_n_density(abs(E1)) - ln_n_density(abs(E2)).lt.-600) then
         p = 0.d0
     else
-  !      print*, ln_n_density(abs(E1)) - ln_n_density(abs(E2))
         p = min(1.d0, exp(ln_n_density(abs(E1)) - ln_n_density(abs(E2))))
         
-!    else
-!        print*, "ln_n_density(E1)", ln_n_density(abs(E1))
-!        print*, "ln_n_density(E2)", ln_n_density(abs(E2))
-!        print*, "E1", E1
-!        print*, "E2", E2
-!        p = 0.d0
-     !   print*, "p = 0"
     end if
 
 
@@ -434,7 +382,6 @@ subroutine check_histogram(hist, x, flat, Emin, Emax, num_E)
     err = 0
     do k = 1, num_E
         E_indx = Emin + (k-1)
-        ! si algun dels valors no compleix la condicio
         if ((hist(abs(E_indx)) < (x * avg_hist)).and.(hist(abs(E_indx)) > 0)) then
             err = err + 1
         end if
