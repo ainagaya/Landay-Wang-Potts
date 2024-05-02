@@ -1,4 +1,3 @@
-import argparse
 import f90nml
 
 import matplotlib.pyplot as plt
