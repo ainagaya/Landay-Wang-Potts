@@ -20,7 +20,9 @@ program thermodynamics
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 2, L = 20,  n_iter = 1000000, z = 4, num_T = 500
+    integer :: q, L, seed
+    real :: flatness
+    integer, parameter :: n_iter = 1000000, z = 4, num_T = 500
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
     real(8), parameter :: T_min = 1/2.d0, T_max = 1.d0/0.002d0
@@ -49,6 +51,13 @@ program thermodynamics
 
     character(len=2) :: strq, strL
     character(len=8) :: strMCS
+
+    ! Read parameters from namelist file
+    namelist /LWparams/ q, L, seed, flatness
+
+    open(unit=10, file='LWparams.nml', status='old')
+    read(10, LWparams)
+    close(10)
 
     N = L*L
 
