@@ -20,7 +20,8 @@ program LandauWangPotts
     ! n_iter : number of Monte Carlo steps
     ! z : number of nearest neighbors
     ! num_beta : number of beta values
-    integer, parameter ::  q = 10, L = 40,  n_iter = 10000000, z = 4, seed = 11012000
+    integer :: q, L
+    integer, parameter ::  n_iter = 10000000, z = 4, seed = 11012000
     ! f_initial : initial value of the modification factor f
     ! f_final : final value of the modification factor f
     ! E_min : minimum energy
@@ -40,7 +41,7 @@ program LandauWangPotts
     ! nbr : array of nearest neighbors
     ! in : array to apply periodic boundary conditions
     integer, allocatable :: spins(:), hist(:), nbr(:,:)
-    integer :: in(0:1, L)
+    integer, allocatable :: in(:, :)
     ! ln_n_density : logarithm of the density of states (g in the paper)
     ! ln_n_norm : normalized density of states
     real(8), allocatable :: ln_n_density(:), ln_n_norm(:), energy_density(:)
@@ -67,6 +68,15 @@ program LandauWangPotts
 
     ! random numbers generator
     real :: r1279
+
+    ! Read parameters from namelist file
+    namelist /LWparams/ q, L
+
+    open(unit=10, file='LWparams.nml', status='old')
+    read(10, LWparams)
+    close(10)
+
+    allocate(in(0:1, L))
 
     N = L*L
 

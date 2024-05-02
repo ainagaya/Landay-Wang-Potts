@@ -5,10 +5,10 @@ FC=gfortran
 
 all: potts_LW.o thermodynamics.o
 
-potts_LW.o: main.f90
-	$(FC) $(CFLAGS) $^ r1279.f90 ran2.f -o $@
+potts_LW.o: src/main.f90
+	$(FC) $(CFLAGS) $^ src/r1279.f90 src/ran2.f -o $@
 
-thermodynamics.o: thermodynamics.f90
+thermodynamics.o: src/thermodynamics.f90
 	$(FC) $(CFLAGS) $^ -o $@
 
 run: potts_LW.o
@@ -18,11 +18,11 @@ thermo: thermodynamics.o
 	./$^
 	
 .PHONY:	plot1
-plot1: ln_n_density_q2_L10.dat
+plot1: L_40_q_10/ln_n_density_q10_L40norm.dat
 	python3 plot_ln_density.py $^
 	
 .PHONY:	plot2
-plot2: res_ising_q2_L10_beta.dat
+plot2: L_40_q_10/res_ising_q10_L40.dat
 	python3 plot_thermodynamics.py $^
 
 
