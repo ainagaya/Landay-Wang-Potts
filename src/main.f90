@@ -155,7 +155,7 @@ program LandauWangPotts
 
     print*, "Final density of states: ", ln_n_density
 
-    open(20, file='ln_n_density' // trim(current_run) // '.dat')
+    open(20, file='results/ln_n_density' // trim(current_run) // '.dat')
 
     print*, "Writing density of states to file..."
 
@@ -178,7 +178,7 @@ program LandauWangPotts
 
 
     print*, "Program finished successfully"
-    print*, "Result is in file: ", 'ln_n_density' // trim(current_run) // '.dat'
+    print*, "Result is in file: ", 'results/ln_n_density' // trim(current_run) // '.dat'
 
 contains   
 

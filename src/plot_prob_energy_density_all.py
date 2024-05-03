@@ -2,7 +2,7 @@ import f90nml
 
 import matplotlib.pyplot as plt
 
-plt.style.use('ggplot')
+#plt.style.use('ggplot')
 
 # Parse command line arguments
 namelist_file="LWparams.nml"
@@ -37,12 +37,15 @@ for T, data_points in T_data.items():
     energies = [float(d[1]) for d in data_points]
     
     # Plot the data with smaller points
-    plt.plot([energy for energy in energies], energy_densities, 'o', label=f'T = {T:.5f}', markersize=1)
+    plt.plot([energy for energy in energies], energy_densities, '-', label=f'T = {T:.2f}', linewidth=0.7)
   #  plt.xlim([0, 8])
-    plt.xlabel('Energy/N')
-    plt.ylabel('g(e)exp(-betaE)')
-    plt.title(f'g(e)exp(-betaE) vs Energy/N (T = {T:.5f})')
-    plt.legend()
-    plt.savefig(filename + f"energy_dens{T:.5f}.png")
-    plt.clf()
-#    plt.show()
+
+
+    
+#    plt.clf()
+
+plt.xlabel('E/N')
+plt.ylabel('n(E)exp(-betaE)')
+#plt.title(f'g(e)exp(-betaE) vs Energy/N (T = {T:.5f})')
+plt.legend()
+plt.savefig(filename + "_peaks.png")

@@ -10,11 +10,11 @@ program thermodynamics
     ! num_beta : number of beta values
     integer :: q, L, seed
     real(8) :: flatness
-    integer, parameter :: z = 4, num_T = 10000
+    integer, parameter :: z = 4
+    integer ::  num_T
     ! beta_min : minimum value of the inverse temperature
     ! beta_max : maximum value of the inverse temperature
     real(8):: T_min, T_max
-
     ! Variables
     ! N : number of spins
     ! i, k : loop variables
@@ -44,7 +44,7 @@ program thermodynamics
 
     ! Read parameters from namelist file
     namelist /LWparams/ q, L, seed, flatness
-    namelist /Thermo/ T_min, T_max
+    namelist /Thermo/ T_min, T_max, num_T
 
     open(unit=10, file='LWparams.nml', status='old')
     read(10, nml=LWparams)
@@ -76,7 +76,7 @@ program thermodynamics
     write (strL, "(I2)") L
 
     current_run = "_q" // trim(strq) // "_L" // trim(strL)
-    open(20, file='ln_n_density' // trim(current_run) // '.dat', status='old')
+    open(20, file='results/ln_n_density' // trim(current_run) // '.dat', status='old')
 
     do i = 1, num_E
         E = Emin + (i-1)
@@ -114,7 +114,7 @@ program thermodynamics
 
     print*, "Calculating internal energy, free energy and entropy... (temperatures equiespaiades)"
 
-    T_interval = (T_max - T_min) / num_T
+    T_interval = abs(T_max - T_min) / num_T
 
     open(10, file='res' // current_run//'.dat')
     open(11, file='energy_density' // current_run//'.dat')
@@ -143,6 +143,7 @@ program thermodynamics
     close(10)
     close(11)
 
+    stop
     print*, "Calculating internal energy, free energy and entropy... (betes equiespaiades)"
 
     beta_interval = (1/T_min - 1/T_max) / num_T

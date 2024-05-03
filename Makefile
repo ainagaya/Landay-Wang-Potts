@@ -17,16 +17,10 @@ run: potts_LW.o
 thermo: thermodynamics.o
 	./$^
 	
-.PHONY:	plot1
-plot1: 
+.PHONY:	plot
+plot: 
 	python3 src/plot_ln_density.py 
-	
-.PHONY:	plot2
-plot2: 
 	python3 src/plot_thermodynamics.py
-
-.PHONY:	plot3
-plot3: 
 	python3 src/plot_prob_energy_density.py
 
 
@@ -39,3 +33,8 @@ clean:
 cleandata:
 	@rm -f *.dat
 	@echo "Data files removed!"
+
+.PHONY.: cleanplot
+cleanpng:
+	@rm -f *.png
+	@echo "Plots removed!"

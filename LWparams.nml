@@ -1,11 +1,12 @@
 &LWparams
 q=10
-L=20
+L=40
 seed=11012000
 flatness=0.8
 /
 &Thermo
-T_min = 0.001
-T_max = 1.5
+T_min = 0.5
+T_max = 1.0
+num_T=10
 /
 

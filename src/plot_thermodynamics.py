@@ -73,7 +73,7 @@ plt.ylabel('U(L,T)/N')
 #plt.title('Internal Energy vs Beta')
 plt.legend()
 plt.savefig(filename + "int_energy.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([1/beta for beta in betas], free_energies, 'o', label=f'L={L}', markersize=1)
@@ -86,7 +86,7 @@ plt.ylabel('F(L,T)/N')
 #plt.title('Free Energy vs Beta')
 plt.legend()
 plt.savefig(filename + "free_energy.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([1/beta for beta in betas], entropies, 'o', label=f'L={L}', markersize=1)
@@ -98,7 +98,7 @@ plt.ylabel('S(L,T)/N')
 #plt.title('Entropy vs Beta')
 plt.legend()
 plt.savefig(filename + "entropy.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([1/beta for beta in betas], specific_heats, '-', label=f'L={L}', markersize=1)
@@ -111,7 +111,7 @@ plt.ylabel('C(L,T)/N')
 plt.legend()
 plt.xticks(ticks=[0.701, 0.702, 0.703, 0.704])
 plt.savefig(filename + "spec_heat.png")
-plt.show()
+plt.clf()
 
 
 ################### BETA
@@ -126,7 +126,7 @@ plt.ylabel('internal energy')
 plt.title('Internal Energy vs Beta')
 plt.legend()
 plt.savefig(filename + "int_energy_beta.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], free_energies, 'o', label='Data', markersize=1)
@@ -138,7 +138,7 @@ plt.ylabel('free energy')
 plt.title('Free Energy vs Beta')
 plt.legend()
 plt.savefig(filename + "free_energy_beta.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], entropies, 'o', label='Data', markersize=1)
@@ -150,7 +150,7 @@ plt.ylabel('entropy')
 plt.title('Entropy vs Beta')
 plt.legend()
 plt.savefig(filename + "entropy_beta.png")
-plt.show()
+plt.clf()
 
 # Plot the data with points
 plt.plot([beta for beta in betas], specific_heats, 'o', label='Data', markersize=1)
@@ -162,4 +162,4 @@ plt.ylabel('Specific Heat')
 plt.title('Specific heat vs Beta')
 plt.legend()
 plt.savefig(filename + "spec_heat_beta.png")
-plt.show()
+plt.clf()
